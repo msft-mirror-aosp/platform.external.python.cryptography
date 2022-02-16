@@ -6,7 +6,7 @@ Elliptic curve cryptography
 .. module:: cryptography.hazmat.primitives.asymmetric.ec
 
 
-.. function:: generate_private_key(curve, backend=None)
+.. function:: generate_private_key(curve, backend)
 
     .. versionadded:: 0.5
 
@@ -14,13 +14,13 @@ Elliptic curve cryptography
 
     :param curve: An instance of :class:`EllipticCurve`.
 
-    :param backend: An optional instance of
+    :param backend: An instance of
         :class:`~cryptography.hazmat.backends.interfaces.EllipticCurveBackend`.
 
     :returns: A new instance of :class:`EllipticCurvePrivateKey`.
 
 
-.. function:: derive_private_key(private_value, curve, backend=None)
+.. function:: derive_private_key(private_value, curve, backend)
 
     .. versionadded:: 1.6
 
@@ -31,7 +31,7 @@ Elliptic curve cryptography
 
     :param curve: An instance of :class:`EllipticCurve`.
 
-    :param backend: An optional instance of
+    :param backend: An instance of
         :class:`~cryptography.hazmat.backends.interfaces.EllipticCurveBackend`.
 
     :returns: A new instance of :class:`EllipticCurvePrivateKey`.
@@ -47,19 +47,16 @@ Elliptic Curve Signature Algorithms
     The ECDSA signature algorithm first standardized in NIST publication
     `FIPS 186-3`_, and later in `FIPS 186-4`_.
 
-    Note that while elliptic curve keys can be used for both signing and key
-    exchange, this is `bad cryptographic practice`_. Instead, users should
-    generate separate signing and ECDH keys.
-
     :param algorithm: An instance of
         :class:`~cryptography.hazmat.primitives.hashes.HashAlgorithm`.
 
     .. doctest::
 
+        >>> from cryptography.hazmat.backends import default_backend
         >>> from cryptography.hazmat.primitives import hashes
         >>> from cryptography.hazmat.primitives.asymmetric import ec
         >>> private_key = ec.generate_private_key(
-        ...     ec.SECP384R1()
+        ...     ec.SECP384R1(), default_backend()
         ... )
         >>> data = b"this is some data I'd like to sign"
         >>> signature = private_key.sign(
@@ -67,7 +64,7 @@ Elliptic Curve Signature Algorithms
         ...     ec.ECDSA(hashes.SHA256())
         ... )
 
-    The ``signature`` is a ``bytes`` object, whose contents are DER encoded as
+    The ``signature`` is a ``bytes`` object, whose contents is DER encoded as
     described in :rfc:`3279`. This can be decoded using
     :func:`~cryptography.hazmat.primitives.asymmetric.utils.decode_dss_signature`.
 
@@ -79,7 +76,7 @@ Elliptic Curve Signature Algorithms
 
         >>> from cryptography.hazmat.primitives.asymmetric import utils
         >>> chosen_hash = hashes.SHA256()
-        >>> hasher = hashes.Hash(chosen_hash)
+        >>> hasher = hashes.Hash(chosen_hash, default_backend())
         >>> hasher.update(b"data & ")
         >>> hasher.update(b"more data")
         >>> digest = hasher.finalize()
@@ -89,17 +86,12 @@ Elliptic Curve Signature Algorithms
         ... )
 
 
-    Verification requires the public key, the DER-encoded signature itself, the
-    signed data, and knowledge of the hashing algorithm that was used when
-    producing the signature:
+    Verification requires the public key, the signature itself, the signed
+    data, and knowledge of the hashing algorithm that was used when producing
+    the signature:
 
     >>> public_key = private_key.public_key()
     >>> public_key.verify(signature, data, ec.ECDSA(hashes.SHA256()))
-
-    As above, the ``signature`` is a ``bytes`` object whose contents are DER
-    encoded as described in :rfc:`3279`. It can be created from a raw ``(r,s)``
-    pair by using
-    :func:`~cryptography.hazmat.primitives.asymmetric.utils.encode_dss_signature`.
 
     If the signature is not valid, an
     :class:`~cryptography.exceptions.InvalidSignature` exception will be raised.
@@ -111,7 +103,7 @@ Elliptic Curve Signature Algorithms
     .. doctest::
 
         >>> chosen_hash = hashes.SHA256()
-        >>> hasher = hashes.Hash(chosen_hash)
+        >>> hasher = hashes.Hash(chosen_hash, default_backend())
         >>> hasher.update(b"data & ")
         >>> hasher.update(b"more data")
         >>> digest = hasher.finalize()
@@ -147,12 +139,12 @@ Elliptic Curve Signature Algorithms
 
         The private value.
 
-    .. method:: private_key(backend=None)
+    .. method:: private_key(backend)
 
         Convert a collection of numbers into a private key suitable for doing
         actual cryptographic operations.
 
-        :param backend: An optional instance of
+        :param backend: An instance of
             :class:`~cryptography.hazmat.backends.interfaces.EllipticCurveBackend`.
 
         :returns: A new instance of :class:`EllipticCurvePrivateKey`.
@@ -189,12 +181,12 @@ Elliptic Curve Signature Algorithms
 
         The affine y component of the public point used for verifying.
 
-    .. method:: public_key(backend=None)
+    .. method:: public_key(backend)
 
         Convert a collection of numbers into a public key suitable for doing
         actual cryptographic operations.
 
-        :param backend: An optional instance of
+        :param backend: An instance of
             :class:`~cryptography.hazmat.backends.interfaces.EllipticCurveBackend`.
 
         :raises ValueError: Raised if the point is invalid for the curve.
@@ -257,10 +249,6 @@ Elliptic Curve Key Exchange algorithm
     key, derivation of multiple keys, and destroys any structure that may be
     present.
 
-    Note that while elliptic curve keys can be used for both signing and key
-    exchange, this is `bad cryptographic practice`_. Instead, users should
-    generate separate signing and ECDH keys.
-
     .. warning::
 
         This example does not give `forward secrecy`_ and is only provided as a
@@ -269,17 +257,18 @@ Elliptic Curve Key Exchange algorithm
 
     .. doctest::
 
+        >>> from cryptography.hazmat.backends import default_backend
         >>> from cryptography.hazmat.primitives import hashes
         >>> from cryptography.hazmat.primitives.asymmetric import ec
         >>> from cryptography.hazmat.primitives.kdf.hkdf import HKDF
         >>> # Generate a private key for use in the exchange.
         >>> server_private_key = ec.generate_private_key(
-        ...     ec.SECP384R1()
+        ...     ec.SECP384R1(), default_backend()
         ... )
         >>> # In a real handshake the peer is a remote client. For this
         >>> # example we'll generate another local private key though.
         >>> peer_private_key = ec.generate_private_key(
-        ...     ec.SECP384R1()
+        ...     ec.SECP384R1(), default_backend()
         ... )
         >>> shared_key = server_private_key.exchange(
         ...     ec.ECDH(), peer_private_key.public_key())
@@ -289,6 +278,7 @@ Elliptic Curve Key Exchange algorithm
         ...     length=32,
         ...     salt=None,
         ...     info=b'handshake data',
+        ...     backend=default_backend()
         ... ).derive(shared_key)
         >>> # And now we can demonstrate that the handshake performed in the
         >>> # opposite direction gives the same final value
@@ -300,6 +290,7 @@ Elliptic Curve Key Exchange algorithm
         ...     length=32,
         ...     salt=None,
         ...     info=b'handshake data',
+        ...     backend=default_backend()
         ... ).derive(same_shared_key)
         >>> derived_key == same_derived_key
         True
@@ -312,18 +303,19 @@ Elliptic Curve Key Exchange algorithm
 
     .. doctest::
 
+        >>> from cryptography.hazmat.backends import default_backend
         >>> from cryptography.hazmat.primitives import hashes
         >>> from cryptography.hazmat.primitives.asymmetric import ec
         >>> from cryptography.hazmat.primitives.kdf.hkdf import HKDF
         >>> # Generate a private key for use in the exchange.
         >>> private_key = ec.generate_private_key(
-        ...     ec.SECP384R1()
+        ...     ec.SECP384R1(), default_backend()
         ... )
         >>> # In a real handshake the peer_public_key will be received from the
         >>> # other party. For this example we'll generate another private key
         >>> # and get a public key from that.
         >>> peer_public_key = ec.generate_private_key(
-        ...     ec.SECP384R1()
+        ...     ec.SECP384R1(), default_backend()
         ... ).public_key()
         >>> shared_key = private_key.exchange(ec.ECDH(), peer_public_key)
         >>> # Perform key derivation.
@@ -332,13 +324,14 @@ Elliptic Curve Key Exchange algorithm
         ...     length=32,
         ...     salt=None,
         ...     info=b'handshake data',
+        ...     backend=default_backend()
         ... ).derive(shared_key)
         >>> # For the next handshake we MUST generate another private key.
         >>> private_key_2 = ec.generate_private_key(
-        ...     ec.SECP384R1()
+        ...     ec.SECP384R1(), default_backend()
         ... )
         >>> peer_public_key_2 = ec.generate_private_key(
-        ...     ec.SECP384R1()
+        ...     ec.SECP384R1(), default_backend()
         ... ).public_key()
         >>> shared_key_2 = private_key_2.exchange(ec.ECDH(), peer_public_key_2)
         >>> derived_key_2 = HKDF(
@@ -346,6 +339,7 @@ Elliptic Curve Key Exchange algorithm
         ...     length=32,
         ...     salt=None,
         ...     info=b'handshake data',
+        ...     backend=default_backend()
         ... ).derive(shared_key_2)
 
 Elliptic Curves
@@ -607,16 +601,7 @@ Key Interfaces
         :param signature_algorithm: An instance of
             :class:`EllipticCurveSignatureAlgorithm`, such as :class:`ECDSA`.
 
-        :return bytes: The signature as a ``bytes`` object, whose contents are
-            DER encoded as described in :rfc:`3279`. This can be decoded using
-            :func:`~cryptography.hazmat.primitives.asymmetric.utils.decode_dss_signature`,
-            which returns the decoded tuple ``(r, s)``.
-
-    .. attribute:: curve
-
-        :type: :class:`EllipticCurve`
-
-        The EllipticCurve that this key is on.
+        :return bytes: Signature.
 
     .. attribute:: key_size
 
@@ -648,8 +633,7 @@ Key Interfaces
         :attr:`~cryptography.hazmat.primitives.serialization.Encoding.PEM` or
         :attr:`~cryptography.hazmat.primitives.serialization.Encoding.DER`),
         format (
-        :attr:`~cryptography.hazmat.primitives.serialization.PrivateFormat.TraditionalOpenSSL`,
-        :attr:`~cryptography.hazmat.primitives.serialization.PrivateFormat.OpenSSH`
+        :attr:`~cryptography.hazmat.primitives.serialization.PrivateFormat.TraditionalOpenSSL`
         or
         :attr:`~cryptography.hazmat.primitives.serialization.PrivateFormat.PKCS8`)
         and encryption algorithm (such as
@@ -720,10 +704,7 @@ Key Interfaces
         Verify one block of data was signed by the private key associated
         with this public key.
 
-        :param bytes signature: The DER-encoded signature to verify.
-            A raw signature may be DER-encoded by splitting it into the ``r``
-            and ``s`` components and passing them into
-            :func:`~cryptography.hazmat.primitives.asymmetric.utils.encode_dss_signature`.
+        :param bytes signature: The signature to verify.
 
         :param bytes data: The message string that was signed.
 
@@ -780,10 +761,12 @@ This sample demonstrates how to generate a private key and serialize it.
 
 .. doctest::
 
-    >>> from cryptography.hazmat.primitives import serialization
+    >>> from cryptography.hazmat.backends import default_backend
+    >>> from cryptography.hazmat.primitives import hashes
     >>> from cryptography.hazmat.primitives.asymmetric import ec
+    >>> from cryptography.hazmat.primitives import serialization
 
-    >>> private_key = ec.generate_private_key(ec.SECP384R1())
+    >>> private_key = ec.generate_private_key(ec.SECP384R1(), default_backend())
 
     >>> serialized_private = private_key.private_bytes(
     ...     encoding=serialization.Encoding.PEM,
@@ -823,12 +806,14 @@ in PEM format.
 
     >>> loaded_public_key = serialization.load_pem_public_key(
     ...     serialized_public,
+    ...     backend=default_backend()
     ... )
 
     >>> loaded_private_key = serialization.load_pem_private_key(
     ...     serialized_private,
     ...     # or password=None, if in plain text
     ...     password=b'testpassword',
+    ...     backend=default_backend()
     ... )
 
 
@@ -941,21 +926,6 @@ Elliptic Curve Object Identifiers
 
         Corresponds to the dotted string ``"1.3.132.0.39"``.
 
-.. function:: get_curve_for_oid(oid)
-
-    .. versionadded:: 2.6
-
-    A function that takes an :class:`~cryptography.x509.ObjectIdentifier`
-    and returns the associated elliptic curve class.
-
-    :param oid: An instance of
-        :class:`~cryptography.x509.ObjectIdentifier`.
-
-    :returns: The matching elliptic curve class. The returned class conforms
-        to the :class:`EllipticCurve` interface.
-
-    :raises LookupError: Raised if no elliptic curve is found that matches
-        the provided object identifier.
 
 .. _`FIPS 186-3`: https://csrc.nist.gov/csrc/media/publications/fips/186/3/archive/2009-06-25/documents/fips_186-3.pdf
 .. _`FIPS 186-4`: https://csrc.nist.gov/publications/detail/fips/186/4/final
@@ -969,5 +939,4 @@ Elliptic Curve Object Identifiers
 .. _`ECDSA`: https://en.wikipedia.org/wiki/ECDSA
 .. _`EdDSA`: https://en.wikipedia.org/wiki/EdDSA
 .. _`forward secrecy`: https://en.wikipedia.org/wiki/Forward_secrecy
-.. _`SEC 1 v2.0`: https://www.secg.org/sec1-v2.pdf
-.. _`bad cryptographic practice`: https://crypto.stackexchange.com/a/3313
+.. _`SEC 1 v2.0`: http://www.secg.org/sec1-v2.pdf

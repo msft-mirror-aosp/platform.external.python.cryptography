@@ -19,8 +19,7 @@ key derivation functions. For example, to encrypt something with
     'A really secret message. Not for prying eyes.'
 
 If you are interested in learning more about the field of cryptography, we
-recommend `Crypto 101, by Laurens Van Houtven`_ and `The Cryptopals Crypto
-Challenges`_.
+recommend `Crypto 101, by Laurens Van Houtven`_.
 
 Installation
 ------------
@@ -68,6 +67,7 @@ hazmat layer only when necessary.
     exceptions
     random-numbers
     hazmat/backends/index
+    hazmat/bindings/index
 
 .. toctree::
     :maxdepth: 2
@@ -92,4 +92,3 @@ hazmat layer only when necessary.
     :doc:`get in touch </community>`.
 
 .. _`Crypto 101, by Laurens Van Houtven`: https://www.crypto101.io/
-.. _`The Cryptopals Crypto Challenges`: https://cryptopals.com/
