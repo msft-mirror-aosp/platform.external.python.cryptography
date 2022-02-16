@@ -16,17 +16,16 @@ class X25519PublicKey(object):
     @classmethod
     def from_public_bytes(cls, data):
         from cryptography.hazmat.backends.openssl.backend import backend
-
         if not backend.x25519_supported():
             raise UnsupportedAlgorithm(
                 "X25519 is not supported by this version of OpenSSL.",
-                _Reasons.UNSUPPORTED_EXCHANGE_ALGORITHM,
+                _Reasons.UNSUPPORTED_EXCHANGE_ALGORITHM
             )
 
         return backend.x25519_load_public_bytes(data)
 
     @abc.abstractmethod
-    def public_bytes(self, encoding, format):
+    def public_bytes(self, encoding=None, format=None):
         """
         The serialized bytes of the public key.
         """
@@ -37,22 +36,20 @@ class X25519PrivateKey(object):
     @classmethod
     def generate(cls):
         from cryptography.hazmat.backends.openssl.backend import backend
-
         if not backend.x25519_supported():
             raise UnsupportedAlgorithm(
                 "X25519 is not supported by this version of OpenSSL.",
-                _Reasons.UNSUPPORTED_EXCHANGE_ALGORITHM,
+                _Reasons.UNSUPPORTED_EXCHANGE_ALGORITHM
             )
         return backend.x25519_generate_key()
 
     @classmethod
     def from_private_bytes(cls, data):
         from cryptography.hazmat.backends.openssl.backend import backend
-
         if not backend.x25519_supported():
             raise UnsupportedAlgorithm(
                 "X25519 is not supported by this version of OpenSSL.",
-                _Reasons.UNSUPPORTED_EXCHANGE_ALGORITHM,
+                _Reasons.UNSUPPORTED_EXCHANGE_ALGORITHM
             )
 
         return backend.x25519_load_private_bytes(data)
