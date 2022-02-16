@@ -167,11 +167,12 @@ Creating Requests
 
     .. doctest::
 
+        >>> from cryptography.hazmat.backends import default_backend
         >>> from cryptography.hazmat.primitives import serialization
         >>> from cryptography.hazmat.primitives.hashes import SHA1
         >>> from cryptography.x509 import load_pem_x509_certificate, ocsp
-        >>> cert = load_pem_x509_certificate(pem_cert)
-        >>> issuer = load_pem_x509_certificate(pem_issuer)
+        >>> cert = load_pem_x509_certificate(pem_cert, default_backend())
+        >>> issuer = load_pem_x509_certificate(pem_issuer, default_backend())
         >>> builder = ocsp.OCSPRequestBuilder()
         >>> # SHA1 is in this example because RFC 5019 mandates its use.
         >>> builder = builder.add_certificate(cert, issuer, SHA1())
@@ -291,35 +292,27 @@ Creating Responses
         :attr:`~cryptography.x509.ocsp.OCSPResponseStatus.SUCCESSFUL` response.
 
         :param private_key: The
-            :class:`~cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey`,
-            :class:`~cryptography.hazmat.primitives.asymmetric.dsa.DSAPrivateKey`,
-            :class:`~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePrivateKey`,
-            :class:`~cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey` or
-            :class:`~cryptography.hazmat.primitives.asymmetric.ed448.Ed448PrivateKey`
+            :class:`~cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey`
+            or
+            :class:`~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePrivateKey`
             that will be used to sign the certificate.
 
         :param algorithm: The
             :class:`~cryptography.hazmat.primitives.hashes.HashAlgorithm` that
-            will be used to generate the signature.  This must be ``None`` if
-            the ``private_key`` is an
-            :class:`~cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey`
-            or an
-            :class:`~cryptography.hazmat.primitives.asymmetric.ed448.Ed448PrivateKey`
-            and an instance of a
-            :class:`~cryptography.hazmat.primitives.hashes.HashAlgorithm`
-            otherwise.
+            will be used to generate the signature.
 
         :returns: A new :class:`~cryptography.x509.ocsp.OCSPResponse`.
 
     .. doctest::
 
         >>> import datetime
+        >>> from cryptography.hazmat.backends import default_backend
         >>> from cryptography.hazmat.primitives import hashes, serialization
         >>> from cryptography.x509 import load_pem_x509_certificate, ocsp
-        >>> cert = load_pem_x509_certificate(pem_cert)
-        >>> issuer = load_pem_x509_certificate(pem_issuer)
-        >>> responder_cert = load_pem_x509_certificate(pem_responder_cert)
-        >>> responder_key = serialization.load_pem_private_key(pem_responder_key, None)
+        >>> cert = load_pem_x509_certificate(pem_cert, default_backend())
+        >>> issuer = load_pem_x509_certificate(pem_issuer, default_backend())
+        >>> responder_cert = load_pem_x509_certificate(pem_responder_cert, default_backend())
+        >>> responder_key = serialization.load_pem_private_key(pem_responder_key, None, default_backend())
         >>> builder = ocsp.OCSPResponseBuilder()
         >>> # SHA1 is in this example because RFC 5019 mandates its use.
         >>> builder = builder.add_response(
@@ -348,6 +341,7 @@ Creating Responses
 
     .. doctest::
 
+        >>> from cryptography.hazmat.backends import default_backend
         >>> from cryptography.hazmat.primitives import hashes, serialization
         >>> from cryptography.x509 import load_pem_x509_certificate, ocsp
         >>> response = ocsp.OCSPResponseBuilder.build_unsuccessful(
@@ -440,10 +434,7 @@ Interfaces
 
         Returns the
         :class:`~cryptography.hazmat.primitives.hashes.HashAlgorithm` which
-        was used in signing this response.  Can be ``None`` if signature
-        did not use separate hash
-        (:attr:`~cryptography.x509.oid.SignatureAlgorithmOID.ED25519`,
-        :attr:`~cryptography.x509.oid.SignatureAlgorithmOID.ED448`).
+        was used in signing this response.
 
     .. attribute:: signature
 
@@ -597,14 +588,6 @@ Interfaces
         :type: :class:`~cryptography.x509.Extensions`
 
         The extensions encoded in the response.
-
-    .. attribute:: single_extensions
-
-        .. versionadded:: 2.9
-
-        :type: :class:`~cryptography.x509.Extensions`
-
-        The single extensions encoded in the response.
 
     .. method:: public_bytes(encoding)
 
