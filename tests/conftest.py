@@ -9,18 +9,12 @@ import pytest
 from cryptography.hazmat.backends.openssl import backend as openssl_backend
 
 from .utils import (
-    check_backend_support,
-    load_wycheproof_tests,
+    check_backend_support, load_wycheproof_tests, skip_if_wycheproof_none
 )
 
 
 def pytest_report_header(config):
-    return "\n".join(
-        [
-            "OpenSSL: {}".format(openssl_backend.openssl_version_text()),
-            "FIPS Enabled: {}".format(openssl_backend._fips_enabled),
-        ]
-    )
+    return "OpenSSL: {0}".format(openssl_backend.openssl_version_text())
 
 
 def pytest_addoption(parser):
@@ -29,19 +23,14 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     if "wycheproof" in metafunc.fixturenames:
-        wycheproof = metafunc.config.getoption("--wycheproof-root", skip=True)
+        wycheproof = metafunc.config.getoption("--wycheproof-root")
+        skip_if_wycheproof_none(wycheproof)
 
         testcases = []
         marker = metafunc.definition.get_closest_marker("wycheproof_tests")
         for path in marker.args:
             testcases.extend(load_wycheproof_tests(wycheproof, path))
         metafunc.parametrize("wycheproof", testcases)
-
-
-def pytest_runtest_setup(item):
-    if openssl_backend._fips_enabled:
-        for marker in item.iter_markers(name="skip_fips"):
-            pytest.skip(marker.kwargs["reason"])
 
 
 @pytest.fixture()
@@ -54,7 +43,7 @@ def backend(request):
         isinstance(openssl_backend, iface) for iface in required_interfaces
     ):
         pytest.skip(
-            "OpenSSL doesn't implement required interfaces: {}".format(
+            "OpenSSL doesn't implement required interfaces: {0}".format(
                 required_interfaces
             )
         )
