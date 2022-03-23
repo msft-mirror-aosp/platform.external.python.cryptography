@@ -17,7 +17,7 @@ of a message.
 
 A subset of CMAC with the AES-128 algorithm is described in :rfc:`4493`.
 
-.. class:: CMAC(algorithm, backend=None)
+.. class:: CMAC(algorithm, backend)
 
     .. versionadded:: 0.4
 
@@ -26,9 +26,10 @@ A subset of CMAC with the AES-128 algorithm is described in :rfc:`4493`.
 
     .. doctest::
 
+        >>> from cryptography.hazmat.backends import default_backend
         >>> from cryptography.hazmat.primitives import cmac
         >>> from cryptography.hazmat.primitives.ciphers import algorithms
-        >>> c = cmac.CMAC(algorithms.AES(key))
+        >>> c = cmac.CMAC(algorithms.AES(key), backend=default_backend())
         >>> c.update(b"message to authenticate")
         >>> c.finalize()
         b'CT\x1d\xc8\x0e\x15\xbe4e\xdb\xb6\x84\xca\xd9Xk'
@@ -46,7 +47,7 @@ A subset of CMAC with the AES-128 algorithm is described in :rfc:`4493`.
 
     .. doctest::
 
-        >>> c = cmac.CMAC(algorithms.AES(key))
+        >>> c = cmac.CMAC(algorithms.AES(key), backend=default_backend())
         >>> c.update(b"message to authenticate")
         >>> c.verify(b"an incorrect signature")
         Traceback (most recent call last):
@@ -55,7 +56,7 @@ A subset of CMAC with the AES-128 algorithm is described in :rfc:`4493`.
 
     :param algorithm: An instance of
         :class:`~cryptography.hazmat.primitives.ciphers.BlockCipherAlgorithm`.
-    :param backend: An optional instance of
+    :param backend: An instance of
         :class:`~cryptography.hazmat.backends.interfaces.CMACBackend`.
     :raises TypeError: This is raised if the provided ``algorithm`` is not an instance of
         :class:`~cryptography.hazmat.primitives.ciphers.BlockCipherAlgorithm`

@@ -17,9 +17,6 @@
 #include <poll.h>
 #endif
 
-#if CRYPTOGRAPHY_NEEDS_OSRANDOM_ENGINE
-/* OpenSSL has ENGINE support and is older than 1.1.1d (the first version that
- * properly implements fork safety in its RNG) so build the engine. */
 static const char *Cryptography_osrandom_engine_id = "osrandom";
 
 /****************************************************************************
@@ -97,18 +94,7 @@ static struct {
     ino_t st_ino;
 } urandom_cache = { -1 };
 
-static int open_cloexec(const char *path) {
-    int open_flags = O_RDONLY;
-#ifdef O_CLOEXEC
-    open_flags |= O_CLOEXEC;
-#endif
-
-    int fd = open(path, open_flags);
-    if (fd == -1) {
-        return -1;
-    }
-
-#ifndef O_CLOEXEC
+static int set_cloexec(int fd) {
     int flags = fcntl(fd, F_GETFD);
     if (flags == -1) {
         return -1;
@@ -116,8 +102,7 @@ static int open_cloexec(const char *path) {
     if (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1) {
         return -1;
     }
-#endif
-    return fd;
+    return 0;
 }
 
 #ifdef __linux__
@@ -129,8 +114,11 @@ static int open_cloexec(const char *path) {
 static int wait_on_devrandom(void) {
     struct pollfd pfd = {};
     int ret = 0;
-    int random_fd = open_cloexec("/dev/random");
+    int random_fd = open("/dev/random", O_RDONLY);
     if (random_fd < 0) {
+        return -1;
+    }
+    if (set_cloexec(random_fd) < 0) {
         return -1;
     }
     pfd.fd = random_fd;
@@ -166,8 +154,11 @@ static int dev_urandom_fd(void) {
         }
 #endif
 
-        fd = open_cloexec("/dev/urandom");
+        fd = open("/dev/urandom", O_RDONLY);
         if (fd < 0) {
+            goto error;
+        }
+        if (set_cloexec(fd) < 0) {
             goto error;
         }
         if (fstat(fd, &st)) {
@@ -252,7 +243,7 @@ static int osrandom_init(ENGINE *e) {
 #if !defined(__APPLE__)
     getentropy_works = CRYPTOGRAPHY_OSRANDOM_GETENTROPY_WORKS;
 #else
-    if (__builtin_available(macOS 10.12, *)) {
+    if (&getentropy != NULL) {
         getentropy_works = CRYPTOGRAPHY_OSRANDOM_GETENTROPY_WORKS;
     } else {
         getentropy_works = CRYPTOGRAPHY_OSRANDOM_GETENTROPY_FALLBACK;
@@ -278,11 +269,7 @@ static int osrandom_rand_bytes(unsigned char *buffer, int size) {
         while (size > 0) {
             /* OpenBSD and macOS restrict maximum buffer size to 256. */
             len = size > 256 ? 256 : size;
-/* on mac, availability is already checked using `__builtin_available` above */
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunguarded-availability"
             res = getentropy(buffer, (size_t)len);
-#pragma clang diagnostic pop
             if (res < 0) {
                 ERR_Cryptography_OSRandom_error(
                     CRYPTOGRAPHY_OSRANDOM_F_RAND_BYTES,
@@ -529,7 +516,7 @@ static int osrandom_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) (void)) 
             ENGINEerr(ENGINE_F_ENGINE_CTRL, ENGINE_R_INVALID_ARGUMENT);
             return 0;
         }
-        strcpy((char *)p, name);
+        strncpy((char *)p, name, len);
         return (int)len;
     default:
         ENGINEerr(ENGINE_F_ENGINE_CTRL, ENGINE_R_CTRL_COMMAND_NOT_IMPLEMENTED);
@@ -645,16 +632,3 @@ int Cryptography_add_osrandom_engine(void) {
 
     return 1;
 }
-
-#else
-/* If OpenSSL has no ENGINE support then we don't want
- * to compile the osrandom engine, but we do need some
- * placeholders */
-static const char *Cryptography_osrandom_engine_id = "no-engine-support";
-static const char *Cryptography_osrandom_engine_name = "osrandom_engine disabled";
-
-int Cryptography_add_osrandom_engine(void) {
-    return 0;
-}
-
-#endif
