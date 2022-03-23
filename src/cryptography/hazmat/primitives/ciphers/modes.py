@@ -72,11 +72,9 @@ def _check_aes_key_length(self, algorithm):
 
 def _check_iv_length(self, algorithm):
     if len(self.initialization_vector) * 8 != algorithm.block_size:
-        raise ValueError(
-            "Invalid IV size ({}) for {}.".format(
-                len(self.initialization_vector), self.name
-            )
-        )
+        raise ValueError("Invalid IV size ({0}) for {1}.".format(
+            len(self.initialization_vector), self.name
+        ))
 
 
 def _check_iv_and_key_length(self, algorithm):
@@ -180,11 +178,9 @@ class CTR(object):
     def validate_for_algorithm(self, algorithm):
         _check_aes_key_length(self, algorithm)
         if len(self.nonce) * 8 != algorithm.block_size:
-            raise ValueError(
-                "Invalid nonce size ({}) for {}.".format(
-                    len(self.nonce), self.name
-                )
-            )
+            raise ValueError("Invalid nonce size ({0}) for {1}.".format(
+                len(self.nonce), self.name
+            ))
 
 
 @utils.register_interface(Mode)
@@ -196,14 +192,12 @@ class GCM(object):
     _MAX_AAD_BYTES = (2 ** 64) // 8
 
     def __init__(self, initialization_vector, tag=None, min_tag_length=16):
-        # OpenSSL 3.0.0 constrains GCM IVs to [64, 1024] bits inclusive
-        # This is a sane limit anyway so we'll enforce it here.
+        # len(initialization_vector) must in [1, 2 ** 64), but it's impossible
+        # to actually construct a bytes object that large, so we don't check
+        # for it
         utils._check_byteslike("initialization_vector", initialization_vector)
-        if len(initialization_vector) < 8 or len(initialization_vector) > 128:
-            raise ValueError(
-                "initialization_vector must be between 8 and 128 bytes (64 "
-                "and 1024 bits)."
-            )
+        if len(initialization_vector) == 0:
+            raise ValueError("initialization_vector must be at least 1 byte")
         self._initialization_vector = initialization_vector
         if tag is not None:
             utils._check_bytes("tag", tag)
@@ -211,9 +205,8 @@ class GCM(object):
                 raise ValueError("min_tag_length must be >= 4")
             if len(tag) < min_tag_length:
                 raise ValueError(
-                    "Authentication tag must be {} bytes or longer.".format(
-                        min_tag_length
-                    )
+                    "Authentication tag must be {0} bytes or longer.".format(
+                        min_tag_length)
                 )
         self._tag = tag
         self._min_tag_length = min_tag_length
