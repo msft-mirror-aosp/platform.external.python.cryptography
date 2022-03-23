@@ -9,6 +9,8 @@ INCLUDES = """
 """
 
 TYPES = """
+static const int Cryptography_HAS_ECDH;
+static const int Cryptography_HAS_SET_ECDH_AUTO;
 """
 
 FUNCTIONS = """
@@ -18,4 +20,12 @@ long SSL_CTX_set_ecdh_auto(SSL_CTX *, int);
 """
 
 CUSTOMIZATIONS = """
+static const long Cryptography_HAS_ECDH = 1;
+
+#ifndef SSL_CTX_set_ecdh_auto
+static const long Cryptography_HAS_SET_ECDH_AUTO = 0;
+long (*SSL_CTX_set_ecdh_auto)(SSL_CTX *, int) = NULL;
+#else
+static const long Cryptography_HAS_SET_ECDH_AUTO = 1;
+#endif
 """
