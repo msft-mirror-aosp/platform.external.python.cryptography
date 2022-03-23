@@ -81,7 +81,7 @@ each supported Python version and run the tests. For example:
     ...
      py27: commands succeeded
     ERROR:   pypy: InterpreterNotFound: pypy
-     py38: commands succeeded
+     py34: commands succeeded
      docs: commands succeeded
      pep8: commands succeeded
 
